@@ -1,66 +1,64 @@
-let contacts = require('./contacts.json');
-const { nanoid } = require('nanoid');
+const { createNotFoundHttpError } = require('../helpers/createHttpError');
+const { Contacts } = require('./contactSchema');
 
-const listContacts = (_, res) => {
-  return res.status(200).json(contacts);
+const listContacts = async (_, res) => {
+  const contacts = await Contacts.find();
+  return res.json(contacts);
 };
 
-const getById = (req, res) => {
+const getById = async (req, res, next) => {
   const { contactId } = req.params;
-  const findContactId = contacts.find(({ id }) => id === contactId);
-  if (!findContactId) {
-    return res.status(404).json({ message: 'Not found' });
+  const findContact = await Contacts.findById(contactId);
+  if (findContact) {
+    return res.status(200).json(findContact);
   }
-  return res.status(200).json(findContactId);
+  next(createNotFoundHttpError());
 };
 
-const removeContact = (req, res) => {
+const removeContact = async (req, res, next) => {
   const { contactId } = req.params;
-  const findContact = contacts.find(({ id }) => id === contactId);
-  if (!findContact) {
-    return res.status(404).json({ message: 'Not found' });
+  const findContact = await Contacts.findById(contactId);
+  if (findContact) {
+    await Contacts.findByIdAndDelete(contactId);
+    return res.status(200).json(findContact);
   }
-  const newContacts = contacts.filter(contact => contact.id !== contactId);
-  contacts = newContacts;
-  return res.status(200).json({ message: 'contact deleted' });
+  next(createNotFoundHttpError());
 };
 
 const addContact = async (req, res) => {
-  const { name, email, phone } = req.body;
-  const findContactName = contacts.find(el => el.name === name);
-  if (!findContactName) {
-    const newContact = {
-      id: nanoid(),
-      name,
-      email,
-      phone,
-    };
-    contacts.push(newContact);
+  try {
+    const newContact = await Contacts.create(req.body);
     return res.status(201).json(newContact);
+  } catch (err) {
+    if (err.message.includes('E11000 duplicate key')) {
+      return res.status(409).json('This name is already in contacts');
+    }
+    throw err;
   }
-  return res
-    .status(200)
-    .json({ message: 'There is already a contact with this name' });
 };
 
-const updateContact = (req, res) => {
+const updateContact = async (req, res) => {
   const { contactId } = req.params;
-  const { name, email, phone } = req.body;
-  const findContact = contacts.find(({ id }) => id === contactId);
-  if (!findContact) {
-    return res.status(404).json({ message: 'Not Found' });
-  }
-  if (!name || !email || !phone) {
-    return res.status(400).json({ message: 'Missing fields' });
-  }
-  contacts.forEach(contact => {
-    if (contact.id === contactId) {
-      contact.name = name;
-      contact.email = email;
-      contact.phone = phone;
-    }
+  const updatedContact = await Contacts.findByIdAndUpdate(contactId, req.body, {
+    new: true,
   });
-  return res.status(200).json(findContact);
+  return res.status(200).json(updatedContact);
+};
+
+const updateStatusContact = async (req, res) => {
+  const { contactId } = req.params;
+  const { favorite } = req.body;
+  if (!favorite) {
+    return res.status(400).json({ message: 'missing field favorite' });
+  }
+  const updatedStatusContact = await Contacts.findByIdAndUpdate(
+    contactId,
+    {
+      favorite,
+    },
+    { new: true }
+  );
+  return res.status(200).json(updatedStatusContact);
 };
 
 module.exports = {
@@ -69,4 +67,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 };
