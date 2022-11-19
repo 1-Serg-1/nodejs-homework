@@ -2,7 +2,9 @@ const express = require('express');
 const logger = require('morgan');
 const cors = require('cors');
 
-const contactsRouter = require('./routes/api/contacts');
+const contactsRouter = require('./routes/api/contacts.router');
+const authRouter = require('./routes/api/auth.router');
+const contactsRouterPrivat = require('./routes/api/contactsPrivat.router');
 
 const app = express();
 
@@ -12,6 +14,7 @@ app.use(logger(formatsLogger));
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/users', authRouter, contactsRouterPrivat);
 app.use('/api/contacts', contactsRouter);
 
 app.use((req, res) => {
