@@ -6,6 +6,7 @@ const {
 const { User } = require('./userSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const gravatar = require('gravatar');
 
 const { JWT_SECRET } = process.env;
 
@@ -14,7 +15,13 @@ async function signup(req, res, next) {
 
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(password, salt);
-  const user = new User({ email, password: hashedPassword });
+  const urlAvatarUser = gravatar.url(email);
+  console.log(urlAvatarUser);
+  const user = new User({
+    email,
+    password: hashedPassword,
+    avatarURL: urlAvatarUser,
+  });
 
   try {
     await user.save();
