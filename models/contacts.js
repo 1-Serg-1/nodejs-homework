@@ -1,8 +1,8 @@
 const { createNotFoundHttpError } = require('../helpers/createHttpError');
 const { Contacts } = require('./contactSchema');
 
-const listContacts = async (_, res) => {
-  const contacts = await Contacts.find();
+const listContacts = async (req, res) => {
+  const contacts = await Contacts.find({ owner: req.user._id });
   return res.json(contacts);
 };
 
@@ -26,6 +26,7 @@ const removeContact = async (req, res, next) => {
 };
 
 const addContact = async (req, res) => {
+  req.body.owner = req.user._id;
   try {
     const newContact = await Contacts.create(req.body);
     return res.status(201).json(newContact);

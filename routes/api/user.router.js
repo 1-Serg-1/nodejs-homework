@@ -4,6 +4,7 @@ const { checkToken } = require('../../middlewares/checkTokenMiddleware');
 const { jimpResize } = require('../../middlewares/jimpResizeMiddleware');
 const { upload } = require('../../middlewares/uploadFile');
 const { updateUserAvatarUrl } = require('../../models/users');
+const { reSendEmailVerify } = require('../../models/verifyUser');
 
 const userRouter = express.Router();
 
@@ -14,5 +15,6 @@ userRouter.patch(
   jimpResize,
   tryCatchWrapper(updateUserAvatarUrl)
 );
+userRouter.post('/verify/', tryCatchWrapper(reSendEmailVerify));
 
 module.exports = userRouter;

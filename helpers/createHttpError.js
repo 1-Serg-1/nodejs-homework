@@ -1,7 +1,7 @@
 const { Error } = require('mongoose');
 
-function createNotFoundHttpError() {
-  const err = new Error('Not found');
+function createNotFoundHttpError(value) {
+  const err = new Error(value || 'Not found');
   err.status = 404;
   return err;
 }
@@ -18,8 +18,8 @@ function createBadRequest(value) {
   return err;
 }
 
-function createUnauthorized() {
-  const err = new Error('Email or password is wrong');
+function createUnauthorized(value) {
+  const err = new Error(value || 'Email or password is wrong');
   err.status = 401;
   return err;
 }
