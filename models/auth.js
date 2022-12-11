@@ -7,24 +7,27 @@ const { User } = require('./userSchema');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const gravatar = require('gravatar');
+const { nanoid } = require('nanoid');
+const { sendEmail } = require('./verifyUser');
 
 const { JWT_SECRET } = process.env;
 
 async function signup(req, res, next) {
   const { email, password } = req.body;
-
+  const verificationToken = nanoid();
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(password, salt);
   const urlAvatarUser = gravatar.url(email);
-  console.log(urlAvatarUser);
   const user = new User({
     email,
     password: hashedPassword,
+    verificationToken,
     avatarURL: urlAvatarUser,
   });
 
   try {
     await user.save();
+    await sendEmail({ email, verificationToken });
     return res.status(201).json({
       user: { email: user.email, subscription: user.subscription },
     });
@@ -41,6 +44,9 @@ async function login(req, res, next) {
   const user = await User.findOne({ email });
   if (!user) {
     return next(createUnauthorized());
+  }
+  if (!user.verify) {
+    return next(createUnauthorized('Email is not verified'));
   }
   try {
     const isPasswordTheSame = await bcrypt.compare(password, user.password);
